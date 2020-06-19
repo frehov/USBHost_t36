@@ -1004,7 +1004,7 @@ public:
     // Retuns bit mask showing which axis are defined for the current joystick
     uint64_t axisMask() {return axis_mask_;}
 
-    // returns a bit mask showing which axis have changed since the last read. 
+    // returns a bit mask showing which axis have changed since the last read.
     uint64_t axisChangedMask() { return axis_changed_mask_;}
     uint64_t axisChangeNotifyMask() {return axis_change_notify_mask_;}
     void     axisChangeNotifyMask(uint64_t notify_mask) {axis_change_notify_mask_ = notify_mask;}
@@ -1015,7 +1015,7 @@ public:
     bool setLEDs(uint8_t lr, uint8_t lg, uint8_t lb);  // sets Leds,
     bool inline setLEDs(uint32_t leds) {return setLEDs((leds >> 16) & 0xff, (leds >> 8) & 0xff, leds & 0xff);}  // sets Leds - passing one arg for all leds
     enum { STANDARD_AXIS_COUNT = 10, ADDITIONAL_AXIS_COUNT = 54, TOTAL_AXIS_COUNT = (STANDARD_AXIS_COUNT + ADDITIONAL_AXIS_COUNT) };
-    typedef enum { UNKNOWN = 0, PS3, PS4, XBOXONE, XBOX360, PS3_MOTION, SpaceNav, SWITCH} joytype_t;
+    typedef enum { UNKNOWN = 0, PS3, PS4, XBOXONE, XBOX360, XBOX360_WIRED, PS3_MOTION, SpaceNav, SWITCH} joytype_t;
     joytype_t joystickType() {return joystickType_;}
 
     // PS3 pair function. hack, requires that it be connect4ed by USB and we have the address of the Bluetooth dongle...
@@ -1023,7 +1023,7 @@ public:
 
     bool PS4GetCurrentPairing(uint8_t* bdaddr);
     bool PS4Pair(uint8_t* bdaddr);
-	
+
 	void sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, uint32_t timeout=0);
 	bool sw_getIMUCalValues(float *accel, float *gyro);
 
@@ -1086,15 +1086,15 @@ private:
     bool sw_handle_bt_init_of_joystick(const uint8_t *data, uint16_t length, bool timer_event);
     inline void sw_update_axis(uint8_t axis_index, int new_value);
     bool sw_process_HID_data(const uint8_t *data, uint16_t length);
-	
+
 	void CalcAnalogStick(float &pOutX, float &pOutY, int16_t x, int16_t y, bool isLeft);
-	
+
 	//kludge for switch having different button values
 	bool initialPass_ = true;
 	bool initialPassButton_ = true;
 	bool initialPassBT_ = true;
 	uint32_t buttonOffset_ = 0x00;
-	
+
     uint8_t report_id_ = 0;
     bool anychange = false;
     volatile bool joystickEvent = false;
@@ -1119,7 +1119,7 @@ private:
     uint8_t sw_last_cmd_repeat_count = 0;
     enum {SW_CMD_TIMEOUT = 250000};
     elapsedMicros em_sw_;
-    
+
 
     // Used by HID code
     uint8_t collections_claimed = 0;
@@ -1995,7 +1995,7 @@ public:
     BluetoothConnection *next_ = nullptr;
     BTHIDInput *    device_driver_ = nullptr;
     BluetoothController *btController_ = nullptr;
-    strbuf_t *      strbuf_ = nullptr;  // possible to hold onto string if we have one 
+    strbuf_t *      strbuf_ = nullptr;  // possible to hold onto string if we have one
     uint16_t        connection_rxid_ = 0;
     uint16_t        control_dcid_ = 0x70;
     uint16_t        interrupt_dcid_ = 0x71;
@@ -2014,13 +2014,13 @@ public:
     bool            connection_started_ = false; // probably can be combined
     volatile uint8_t connection_complete_ = 0;   //
     bool            check_for_hid_descriptor_ = false;
-    bool            find_driver_type_1_called_ = false; 
+    bool            find_driver_type_1_called_ = false;
     uint8_t         seq_number_ = 0;
     bool            use_hid_protocol_ = false; //
     bool            inquire_mode_ = false; // inquire mode?  or incomming connect
     bool            sdp_connected_ = false;
-    bool            supports_SSP_ = false; 
-    bool            connection_started_by_timer_ = false; 
+    bool            supports_SSP_ = false;
+    bool            connection_started_by_timer_ = false;
     uint16_t        pending_control_tx_ = 0;
 
     enum {DUNKOWN=0xff, DNIL = 0, DU32, DS32, DU64, DS64, DPB, DLVL};
@@ -2130,7 +2130,7 @@ public:
         {return true;}
 
 
-    // These return > 0 for success, 0 for false, -1, don't want to support link keys. 
+    // These return > 0 for success, 0 for false, -1, don't want to support link keys.
     virtual int writeLinkKey(uint8_t bdaddr[6], uint8_t link_key[16]) {return 0;}
     virtual int readLinkKey(uint8_t bdaddr[6], uint8_t link_key[16]) {return 0;}
 
@@ -2169,15 +2169,15 @@ public:
 
     const uint8_t*  myBDAddr(void) {return my_bdaddr_;}
 
-    // See if we can start up pairing after sketch is running. 
+    // See if we can start up pairing after sketch is running.
     bool startDevicePairing(const char *pin, bool pair_ssp = false);
-    
+
     // Setup a bluetooth pairing callback to receive calls for information and
     // for the sketch to be able to monitor some of the pairing progress
     void setBluetoothPairingCB(BluetoothPairingCB *pairing_cb) {pairing_cb_ = pairing_cb;}
 
     // method to help control where or not all pairing keys should be stored
-    // Can be pointer to File system, in which case we will create a file "PairingKeys" 
+    // Can be pointer to File system, in which case we will create a file "PairingKeys"
     // if FS is NULL, and EEPROM start is specified will store in EEPROM starting
     // at that location.  Note if location is < -1 it will end the have the end
     // of the storage that far from the end of the EEPROM
@@ -2314,7 +2314,7 @@ private:
     uint8_t         rx2buf_[64];    // receive buffer from Bulk end point
     uint8_t         rx2buf2_[256];   // receive buffer from Bulk end point
     uint8_t         rx2_packet_data_remaining_ = 0; // how much data remaining
-    uint8_t         rx2_continue_packet_expected_ = 0; // Are we expecting a continue packet. 
+    uint8_t         rx2_continue_packet_expected_ = 0; // Are we expecting a continue packet.
     uint8_t         hciVersion;     // what version of HCI do we have?
 
     bool            do_pair_device_;    // Should we do a pair for a new device?
@@ -2323,7 +2323,7 @@ private:
     USBDriverTimer  timer_;
     uint8_t         my_bdaddr_[6];  // The bluetooth dongles Bluetooth address.
     uint8_t         features[8];    // remember our local features.
-	
+
     // key storage info
     FS              *pairing_keys_fs_ = nullptr;
     int             pairing_keys_eeprom_start_index_ = -1;
@@ -2750,7 +2750,7 @@ public:
 
 	void end();
 	void init();
-	
+
     virtual bool getVolumeLabel(char *volume_label, size_t cb) { return mscfs.getVolumeLabel(volume_label, cb); }
 
     operator bool() {
