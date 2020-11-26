@@ -1088,8 +1088,28 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
 
     // Some common stuff for both XBoxs
     uint32_t count_end_points = descriptors[4];
-    if (count_end_points < 2) return false;
+
+    //Vendor Specific only
     if (descriptors[5] != 0xff) return false; // bInterfaceClass, 3 = HID
+
+    //Must have atleast 2 endpoints
+    if (count_end_points < 2) return false;
+
+    //Interface protocols must match
+    if (jtype == XBOX360_WIRED && (descriptors[6] != 0x5D || //Xbox360 bInterfaceSubClass
+                                   descriptors[7] != 0x01))	 //Xbox360 bInterfaceProtocol
+        return false;
+
+    if (jtype == XBOX360 && (descriptors[6] != 0x5D ||  //Xbox360 wireless bInterfaceSubClass
+                             descriptors[7] != 0x81))   //Xbox360 wireless bInterfaceProtocol
+        return false;
+
+    if (jtype == XBOXONE && (descriptors[6] != 0x47 ||  //Xbone and SX bInterfaceSubClass
+                             descriptors[7] != 0xD0 ||  //Xbone and SX bInterfaceProtocol
+                             descriptors[15] != 0x04 || //bInterval should be 4 (Need this check for SX controller)
+                             descriptors[22] != 0x04))  //bInterval should be 4 (Need this check for SX controller)
+        return false;
+
     rx_ep_ = 0;
     uint32_t txep = 0;
     uint8_t rx_interval = 0;
@@ -1097,10 +1117,17 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     rx_size_ = 0;
     tx_size_ = 0;
     uint32_t descriptor_index = 9;
+
     if (descriptors[descriptor_index + 1] == 0x22)  {
         if (descriptors[descriptor_index] != 0x14) return false; // only support specific versions...
         descriptor_index += descriptors[descriptor_index]; // XBox360w ignore this unknown setup...
     }
+
+    //Skip non endpoint descriptors
+    if (descriptors[descriptor_index + 1] != 0x05)  {
+        descriptor_index += descriptors[descriptor_index];
+    }
+
     while ((rx_ep_ == 0) || txep == 0) {
         print("  Index:", descriptor_index, DEC);
 
