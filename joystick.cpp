@@ -377,6 +377,19 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
             println("XBox360 wired rumble transfer fail");
         }
         return true;
+    case XBOXDUKE:
+
+        txbuf_[0] = 0x00;
+        txbuf_[1] = 0x06;
+        txbuf_[2] = lValue;
+        txbuf_[3] = lValue;
+        txbuf_[4] = rValue;
+        txbuf_[5] = rValue;
+
+        if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 6, this, __line__)) {
+            println("XBox duke rumble transfer fail");
+        }
+        return true;
     case SWITCH:
         if (btdriver_) {
             struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
@@ -568,6 +581,7 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
 			}
 
         case XBOXONE:
+        case XBOXDUKE:
         default:
             return false;
         }
@@ -1073,8 +1087,14 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     JoystickController::joytype_t jtype = mapVIDPIDtoJoystickType(dev->idVendor, dev->idProduct, true);
     DBGPrintf("\tVID:%x PID:%x Jype:%x\n", dev->idVendor, dev->idProduct, jtype);
     println("Jtype=", (uint8_t)jtype, DEC);
-    if (jtype == UNKNOWN)
-        return false;
+    if (jtype == UNKNOWN) {
+        if (descriptors[5] == 0x58 &&  //Xbox Duke bInterfaceClass
+            descriptors[6] == 0x42) {  //Xbox Duke bInterfaceSubClass
+            jtype = XBOXDUKE;
+        } else {
+            return false;
+        }
+    }
 
     // XBOX One
     //  0  1  2  3  4  5  6  7  8 *9 10  1  2  3  4  5 *6  7  8  9 20  1  2  3  4  5  6  7  8  9 30  1...
@@ -1205,6 +1225,8 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
         connected_ = true;
         setLEDs(0);
         setLEDs(2); //FIXME Hardcoded to 1st led quadrant
+    } else if (jtype == XBOXDUKE) {
+        connected_ = true;
     } else if (jtype == SWITCH) {
         queue_Data_Transfer_Debug(txpipe_, switch_start_input, sizeof(switch_start_input), this, __LINE__);
         connected_ = true;      // remember that hardware is actually connected...
@@ -1308,6 +1330,23 @@ typedef struct {
 	uint8_t rt;
 	int16_t	axis[4]; //lx, ly, rx, ry
 } xbox360wireddata_t;
+
+typedef struct {
+	uint8_t type;
+	uint8_t length;
+	//starting from the LSB: dup,ddown,dleft,dright,start,back,ls,rs
+	uint8_t dbuttons;
+	uint8_t unused;
+	uint8_t a;
+	uint8_t b;
+	uint8_t x;
+	uint8_t y;
+	uint8_t black;
+	uint8_t white;
+	uint8_t lt;
+	uint8_t rt;
+	int16_t	axis[4]; //lx, ly, rx, ry
+} xboxdukedata_t;
 
 typedef struct {
     uint8_t state;
@@ -1517,6 +1556,43 @@ void JoystickController::rx_data(const Transfer_t *transfer)
             }
 
             if (anychange) joystickEvent = true;
+        }
+    } else if (joystickType_ == XBOXDUKE) {
+
+        uint8_t *rx_buf = (uint8_t *)transfer->buffer;
+        if (rx_buf[0] == 0x00 && rx_buf[1] == 0x14){
+            //Update digital buttons
+            xboxdukedata_t *duked = (xboxdukedata_t *)transfer->buffer;
+            if (buttons != duked->dbuttons) {
+                buttons = duked->dbuttons;
+                anychange = true;
+            }
+
+            //Update analog axis'
+            axis_mask_ = 0x3f;
+            axis_changed_mask_ = 0;	// assume none for now
+
+            // Handle analog inputs (a,b,x,y,black,white,lt,rt)
+            for (uint8_t i = 0; i < 8; i++) {
+                if (axis[i] != rx_buf[i + 4]) {
+                    axis[i] = rx_buf[i + 4];
+                    axis_changed_mask_ |= (1 << i);
+                }
+            }
+
+            //Handle stick axis
+            for (uint8_t i = 8; i < 12; i++) {
+                if (axis[i] != duked->axis[i - 8]) {
+                    axis[i]  = duked->axis[i - 8];
+                    axis_changed_mask_ |= (1 << i);
+                }
+            }
+
+            if (axis_changed_mask_)
+                anychange = true;
+
+            if (anychange)
+                joystickEvent = true;
         }
     } else if (joystickType_ == SWITCH) {
     	uint8_t packet[8];
