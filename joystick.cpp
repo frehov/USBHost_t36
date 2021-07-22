@@ -1176,6 +1176,10 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
                     rx_ep_ = descriptors[descriptor_index + 2];
                     rx_size_ = descriptors[descriptor_index + 4];
                     rx_interval = descriptors[descriptor_index + 6];
+                    if (jtype == XBOX360)
+                        rx_interval = descriptors[descriptor_index+6] * 8;
+                    else
+                        rx_interval = descriptors[descriptor_index+6];
                 } else {
                     txep = descriptors[descriptor_index + 2];
                     tx_size_ = descriptors[descriptor_index + 4];
